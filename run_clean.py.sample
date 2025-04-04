@@ -1,0 +1,52 @@
+from lib.prox import Prox
+from lib.cnxLogger import ContextLogger
+import logging, argparse, json
+
+
+LOG_LEVELS = {0: logging.NOTSET, 1: logging.INFO, 2: logging.DEBUG}  # Defaults to WARNING
+
+parser = argparse.ArgumentParser(
+    prog="CleanProx",
+)
+
+parser.add_argument("-v", "--verbose", type=int, default=0)
+
+args = parser.parse_args()
+
+try:
+    with open("env.json", "r") as file:
+        CONFIG = json.load(file)
+except FileNotFoundError:
+    raise ("File does not exist!")
+except json.JSONDecodeError as e:
+    raise ("Error in JSON file:", e)
+
+if args.verbose != 0:
+    t = logging.basicConfig(
+        format="%(asctime)s %(levelname)-8s %(message)s",
+        level=LOG_LEVELS[args.verbose],
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
+context_logger = ContextLogger(logging.getLogger("migrate"))
+
+
+def main():
+    vms = [] # Insert id
+    prox: Prox = Prox(
+        ip=CONFIG["PROXMOX_IP"],
+        user=f"{CONFIG["PROXMOX_USER"]}@pam",
+        password=CONFIG["PROXMOX_PASS"],
+    )
+    for vm in vms:
+        if not prox.IsExistVMByid(vm):
+            continue
+        print(f"Status: {prox.status(vm)['status']}")
+        ticket = prox.stop(vm)
+        prox.wait_for_task(ticket, context_logger)
+
+        prox.deleteVM(vm)
+
+
+if __name__ == "__main__":
+    main()
