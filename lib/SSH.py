@@ -1,32 +1,32 @@
 import paramiko, logging
 from scp import SCPClient
-from abc import ABC, abstractmethod
-from .cnxLogger import ContextLogger
+
+from .clogger import ContextLogger
+from typing import List
 
 
-class Worker(ABC):
-    @abstractmethod
-    def run(self):
-        pass
-
-    @abstractmethod
-    def copy(self):
-        pass
-
-
-class SSHM(Worker):
-    def __init__(self, ip, username, password, context_logger: ContextLogger, port=22, log=logging.CRITICAL):
+class SSHClient:
+    def __init__(self, config, port=22, log=logging.CRITICAL):
         paramiko_logger = logging.getLogger("paramiko")
         paramiko_logger.setLevel(log)
 
+        self.config = config
+        self.logger = config.logger
+        self.port = port
+        self.log = log
+        self.ssh = None
+
+        self._connect()
+
+    def _connect(self) -> None:
+
         self.ssh = paramiko.SSHClient()
         self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        self.ssh.connect(ip, port=port, username=username, password=password)
-        self.logger = context_logger
+        self.ssh.connect(self.config.ProxmoxIP, port=self.port, username=self.config.ProxmoxUser, password=self.config.ProxmoxPass)
 
-    def run(self, command: str, args: str = "") -> str:
+    def run(self, command: str, args: List[str] = []) -> str:
         self.logger.log(level=logging.DEBUG, message=f"[COMMAND] {command} {args}")
-        cmd: str = f"{command} {args}"
+        cmd: str = f"{command} {' '.join(args)}"
         _, stdout, stderr = self.ssh.exec_command(cmd)
         output = stdout.read().decode()
         error = stderr.read().decode()
@@ -45,9 +45,5 @@ class SSHM(Worker):
             scp.put(source, dest)
 
     def __del__(self):
-        self.ssh.close()
-
-
-class LocalWorker(Worker):
-    def __init__(self):
-        pass
+        if self.ssh:
+            self.ssh.close()

@@ -40,11 +40,6 @@ Run the Appropriate Script Based on the System:
 
     Depending on the source system (Windows/Linux), you need to run the corresponding script from the prep_script directory on a migrated VM.
 
-In Hyper-V Manager Console:
-
-    For Windows systems, make sure to add os:windows in the "Notes" section so that the migration script is able to properly identify and categorize the system.
-
-![Tekst alternatywny](img/hyperv.png)
 
 # Section 3. Required Edits to the env.json File:
 ```
@@ -53,26 +48,32 @@ In Hyper-V Manager Console:
 "HYPERV_PASS":"change_me",      # Password
 "HYPER_VM_LIST": [              # List of Hyper-V machine IDs to be migrated
     "8de199b6-d858-45d6-81ef-55eb7a3dbf6f",
-    "62ac9e25-800c-4546-a97e-7f6141bf9ea4"
+    "62ac9e25-800c-4546-a97e-7f6141bf9ea4",
+    {
+        "VMID":"d41aabd2-1a76-45b7-8ea8-48a3054ea52c",
+        "OS":"windows"          # Set this when the VM is running Windows
+    }
     ],
-"HYPERV_AUTO_SHAREDISK": true,  # If true, the script automatically creates network shares to import the disk
-"HYPERV_SHAREDISK":"VMDisks",   # Default network share where disks are stored (if HYPERV_AUTO_SHAREDISK is set to false)
-"HYPERV_SHAREDISK_MAPPING":     # Mapping of the share/disk path to the Proxmox storage where the disk will be imported
+"HYPERV_CREATE_CHECKPOINT": true,  # If true, the script automatically creates checkpoint before migrating VMs
+"HYPERV_AUTO_SHAREDISK": true,     # If true, the script automatically creates network shares to import the disk
+"HYPERV_SHAREDISK":"VMDisks",      # Default network share where disks are stored (if HYPERV_AUTO_SHAREDISK is set to false)
+"HYPERV_SHAREDISK_MAPPING":        # Mapping of the share/disk path to the Proxmox storage where the disk will be imported
     [
         {
-            "C:/VMDisks":"VMDisks",
-            "PROXMOX_STORAGE":"data"
+            "HYPERV_PATH":"C:/VMDisks",
+            "HYPERV_SHAREDISK":"VMDisks",
+            "PROXMOX_STORAGE":"SSD"
         },
         {
-            "E:/VMDisksSSD":"VMDisksSSD",
+            "HYPERV_PATH":"E:/VMDisksSSD",
+            "HYPERV_SHAREDISK":"VMDisksSSD",
             "PROXMOX_STORAGE":"space"
         }
     ],
 "PROXMOX_IP":"192.168.100.252",      # Proxmox server IP address
 "PROXMOX_USER":"root",               # Username
 "PROXMOX_PASS":"change_me",          # Password
-"PROXMOX_MOUNTPATH":"/root/tmp",     # Workdir where directories for mounting Hyper-V shares will be created
-"PROXMOX_IMPORTPATH":"/root/import", # Temporary disk needed for converting VHDX to QCOW2
+"PROXMOX_IMPORTPATH":"/srv/import", # Temporary disk needed only when importing into a datastore that is not ZFSpool.
 "PROXMOX_STORAGE":"data",            # Default datastore in Proxmox where disks will be imported
 "PROXMOX_SWITCH_DEFAULT":"vmbr0",    # Default bridge to connect virtual machine network adapters to after migration
                                       # (unless PROXMOX_SWITCH_MAPPING defines a different bridge)

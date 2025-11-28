@@ -2,19 +2,13 @@ import urllib3, logging, time
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 from proxmoxer import ProxmoxAPI
-from .cnxLogger import ContextLogger
+from .clogger import ContextLogger
 from typing import List
-
-from abc import ABC, abstractmethod
-
-
-class VM(ABC):
-    @abstractmethod
-    def getBootDiks(self):
-        pass
+from .tool import macformat
+from .HyperV import HyperVVM, HyperVHDD
 
 
-class Tag:
+class ProxmoxTag:
     def __init__(self):
         self.tags: List[str] = ["imported"]
 
@@ -26,14 +20,20 @@ class Tag:
 
 
 class TemplateProxmoxVM:
-    def __init__(self):
+    def __init__(self, hyper_vm: HyperVVM, config):
+        self.hyper_vm = hyper_vm
+        self.tags: ProxmoxTag = ProxmoxTag()
+        self.tags.add(f"{hyper_vm.os}")
+        self.tags.add(f"gen{hyper_vm.Generation}")
+        self.tags.add(f"{hyper_vm.vmid}")
+        self.tags.add(f"hv2pve")
         self.cfg = {
-            "name": None,
-            "memory": None,
+            "name": hyper_vm.name,
+            "memory": hyper_vm.MemoryStartup,
             "machine": "q35",
             "agent": 1,
             "cores": 1,
-            "sockets": None,
+            "sockets": hyper_vm.ProcessorCount,
             "ostype": "l26",
             "scsihw": "virtio-scsi-pci",
             "hotplug": 1,
@@ -41,9 +41,31 @@ class TemplateProxmoxVM:
             "vga": "qxl",
             "cpu": "host",
             "start": "0",
-            "tags": None,
-            "description": None,
+            "tags": self.tags,
+            "description": f"Import from {hyper_vm.ComputerName}, id={hyper_vm.vmid}",
         }
+        if hyper_vm.Generation == 2:
+            self.cfg["bios"] = "ovmf"
+
+        self.config = config
+        self._network()
+
+    def add_Tag(self, tag):
+        self.tags.add(tag)
+
+    def _network(self):
+        map_bridges = self.config.ProxmoxSwitchMapping
+        bridge = self.config.ProxmoxSwitchDefault
+
+        for network in self.hyper_vm.networks:
+            if network.SwitchId in map_bridges:
+                bridge = map_bridges[network.SwitchId]
+            networkProx: ProxmoxNetwork = ProxmoxNetwork(typeNetCard=self.config.ProxmoxNetworkType, bridge=bridge, macaddr=macformat(network.MacAddress))
+
+            if network.vlanid:
+                networkProx.setVlan(network.vlanid)
+
+            self.cfg[f"net{network.index}"] = networkProx
 
     def set(self, **kargs):
         for k, v in kargs.items():
@@ -56,19 +78,19 @@ class TemplateProxmoxVM:
         return self.cfg
 
 
-class ProxDisk:
-    def __init__(self, type, lp):
-        self.type = type
-        self.lp = lp
+class ProxmoxHDD:
+    def __init__(self, disk: HyperVHDD):
+        self.type = disk.type_disk
+        self.index = disk.index
 
     def slot(self):
-        return f"{self.type}{self.lp}"
+        return f"{self.type}{self.index}"
 
     def __str__(self):
         return self.slot()
 
 
-class ProxNetwork:
+class ProxmoxNetwork:
     def __init__(self, typeNetCard, bridge, macaddr):
         self.typeNetCard = typeNetCard
         self.bridge = bridge
@@ -85,25 +107,31 @@ class ProxNetwork:
         return output
 
 
-class ProxVM(VM):
+class ProxmoxVM:
     def __init__(self, vm):
         self.vmid = vm.get("vmid")
         self.name = vm.get("name")
         self.disk = []
 
-    def addDisk(self, disk: ProxDisk):
+    def addDisk(self, disk: ProxmoxHDD):
         self.disk.append(disk)
 
-    def getBootDiks(self) -> ProxDisk:
+    def getBootDiks(self) -> ProxmoxHDD:
         return self.disk[0]
 
 
-class Prox:
-    def __init__(self, ip, user, password):
+class ProxmoxClient:
+    def __init__(self, config):
+        self.config = config
+        self.verify_ssl = False
+        self.logger = config.logger
+
+        self._connect()
+
+    def _connect(self):
         try:
-            proxmox_api = ProxmoxAPI(host=ip, user=user, password=password, verify_ssl=False)
-            logging.info("Connected to Proxmox API")
-            self.api = proxmox_api
+            self.api = ProxmoxAPI(host=self.config.ProxmoxIP, user=f"{self.config.ProxmoxUser}@pam", password=self.config.ProxmoxPass, verify_ssl=self.verify_ssl)
+            self.logger.log(level=logging.INFO, message=f"Connected to Proxmox API")
         except Exception as e:
             raise (f"Failed to connect to Proxmox API: {str(e)}")
 
@@ -115,28 +143,44 @@ class Prox:
         for node in nodes:
             vms = self.api.nodes(node["node"]).qemu.get()
             for vm in vms:
-                if vmid == vm.get("vmid", "brak nazwy"):
+                if vmid == vm.get("vmid", "null"):
                     return vm
         return None
 
-    def IsExistVM(self, name) -> ProxVM:
+    def IsExistVM(self, name) -> ProxmoxVM:
         nodes = self.getNodes()
         for node in nodes:
             vms = self.api.nodes(node["node"]).qemu.get()
             for vm in vms:
-                if name == vm.get("name", "brak nazwy"):
-                    return ProxVM(vm)
+                if name == vm.get("name", "null"):
+                    return ProxmoxVM(vm)
         return None
 
     def IsExistVMByHyperVID(self, id) -> bool:
         nodes = self.getNodes()
         for node in nodes:
-            vms = self.api.nodes(node["node"]).qemu.get()
+            qemu_instances = self.api.nodes(node["node"]).qemu.get()
 
-            for vm in vms:
-                vv = self.api.nodes(node["node"]).qemu(vm["vmid"]).config.get()
-                if id in vv.get("description", "brak nazwy"):
+            for qemu_instance in qemu_instances:
+                vm = self.api.nodes(node["node"]).qemu(qemu_instance["vmid"]).config.get()
+                if id in vm.get("description", "null") or id in vm.get("tags", "null"):
                     return True
+        return False
+
+    def findAllVM(self):
+        nodes = self.getNodes()
+        vms = []
+        for node in nodes:
+            vms = vms + self.api.nodes(node["node"]).qemu.get()
+        return vms
+
+    def GetTagByVmId(self, vmid):
+        nodes = self.getNodes()
+        for node in nodes:
+            vms = self.api.nodes(node["node"]).qemu.get()
+            for vm in vms:
+                if vmid == vm.get("vmid", "null"):
+                    return vm.get("tags", "null")
         return False
 
     def findNodeWithVM(self, vmid):
@@ -144,7 +188,7 @@ class Prox:
         for node in nodes:
             vms = self.api.nodes(node["node"]).qemu.get()
             for vm in vms:
-                if vmid == vm.get("vmid", "brak nazwy"):
+                if vmid == vm.get("vmid", "null"):
                     return node["node"]
         return False
 
@@ -160,7 +204,7 @@ class Prox:
         node = self.findNodeWithVM(vmid)
         return self.api.nodes(node).qemu(vmid).status.current.get()
 
-    def setboot(self, vm: VM):
+    def setboot(self, vm: ProxmoxVM):
         node = self.findNodeWithVM(vm.vmid)
         boot_order = f"order={vm.getBootDiks()}"
         self.api.nodes(node).qemu(vm.vmid).config.set(boot=boot_order)
@@ -183,16 +227,16 @@ class Prox:
         node = self.api.nodes(nodes[0]["node"])
         return node.tasks(task_id).status.get()
 
-    def wait_for_task(self, ticket, context_logger: ContextLogger):
-        context_logger.add("[Ticket]")
+    def wait_for_task(self, ticket, logger: ContextLogger):
+        logger.add("[Ticket]")
         while True:
             status = self.status_ticket(ticket)
-            context_logger.log(level=logging.INFO, message=f"status: {status['status']}")
+            logger.log(level=logging.INFO, message=f"status: {status['status']}")
             if status and status["status"] != "running":
-                context_logger.log(
+                logger.log(
                     level=logging.INFO,
                     message=f"exitstatus: {status['exitstatus']}",
                 )
-                context_logger.back()
+                logger.back()
                 return
             time.sleep(1)
