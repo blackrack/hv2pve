@@ -76,7 +76,6 @@ class MigrateManager:
 
         proxmox_vm: ProxmoxVM = self.proxmox_client.IsExistVM(name=hyperV_vm.name)
         proxmox_vm.AddTag(self.config.id_migration)
-
         self.logger.back().add(f"[ Created ]")
         self.logger.log(level=logging.INFO, message=f"Proxmox VM ID: {proxmox_vm.vmid}")
         self.logger.back()
@@ -90,6 +89,10 @@ class MigrateManager:
         proxmox_vm.AddTag(ProxmoxTagType.INIT)
 
         self.proxmox_client.setboot(vm=proxmox_vm)
+
+        if self.config.ProxmoxStartAfter:
+            self.proxmox_client.startAndSuspend(proxmox_vm.vmid)
+
         if self.config.HyperVCreateCheckPoint:
             # snap
             a = 0
@@ -102,7 +105,8 @@ class MigrateManager:
 
             collect_snapshot.append(f"Checkpoint{a}")
 
-            self.disk_manager.migrate_disks(proxmox_vm=proxmox_vm, hyperV_vm=hyperV_vm, avhdx=True)
+            self.disk_manager.migrate_disks(proxmox_vm=proxmox_vm, hyperV_vm=hyperV_vm)
+            
 
             while loop:
                 hyperV_vm.refresh()
@@ -120,7 +124,8 @@ class MigrateManager:
                 self.logger.back().back().add(f"[ Checkpoint{a} ]")
 
                 if a == self.config.MigrateMaxAvhdxChain:
-                    self.logger.log(level=logging.INFO, message=f"Poweroff")
+
+                    self.logger.log(level=logging.DEBUG, message=f"MigrateMaxAvhdxChain - Poweroff vm")
                     loop = False
                     self.PowerOffVmOnHyperV(hyperV_vm=hyperV_vm)
 
@@ -129,7 +134,7 @@ class MigrateManager:
 
             # run after last sync
             if self.config.ProxmoxStartAfter:
-                self.proxmox_client.start(proxmox_vm.vmid)
+                self.proxmox_client.resume(proxmox_vm.vmid)
 
             hyperV_vm.RemoveCheckpoint(name=f"{self.config.id_migration}-Checkpoint{a}")
             self.logger.back()
@@ -138,7 +143,7 @@ class MigrateManager:
             self.disk_manager.migrate_disks(proxmox_vm=proxmox_vm, hyperV_vm=hyperV_vm)
 
             if self.config.ProxmoxStartAfter:
-                self.proxmox_client.start(proxmox_vm.vmid)
+                self.proxmox_client.resume(proxmox_vm.vmid)
 
         self.proxmox_client.SetTag(proxmox_vm, ProxmoxTagType.IMPORTED)
 

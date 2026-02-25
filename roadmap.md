@@ -3,7 +3,6 @@
 ### Features Planned for Future Releases
 
 - Project refactoring and implementation of a dedicated Service Layer
-- Support for Production Checkpoints
 - Ability to resume import after a failure
 - Automatic cleanup of VM and storage after a failed import
 - Automatic selection of the appropriate datastore for each VM disk in PVE (no manual disk-to-storage binding required)

@@ -127,7 +127,20 @@ class ProxmoxClient:
     def start(self, vmid):
         node = self.findNodeWithVM(vmid)
         self.api.nodes(node).qemu(vmid).status.start.post()
+        self.logger.log(level=logging.INFO, message=f"Starting VM on ProxmoxVe")
+        
+    def startAndSuspend(self, vmid):
+        node = self.findNodeWithVM(vmid)
+        self.api.nodes(node).qemu(vmid).status.start.post()
+        self.logger.log(level=logging.INFO, message=f"Starting VM on ProxmoxVe")
+        time.sleep(5)
+        self.api.nodes(node).qemu(vmid).status.suspend.post()
+        self.logger.log(level=logging.INFO, message=f"suspend VM on ProxmoxVe")
 
+    def resume(self, vmid):
+        node = self.findNodeWithVM(vmid)
+        self.api.nodes(node).qemu(vmid).status.resume.post()
+        self.logger.log(level=logging.INFO, message=f"Resume VM on ProxmoxVe")
     def stop(self, vmid):
         node = self.findNodeWithVM(vmid)
         return self.api.nodes(node).qemu(vmid).status.stop.post()
@@ -164,10 +177,10 @@ class ProxmoxClient:
         logger.add("[Ticket]")
         while True:
             status = self.status_ticket(ticket)
-            logger.log(level=logging.INFO, message=f"status: {status['status']}")
+            logger.log(level=logging.DEBUG, message=f"status: {status['status']}")
             if status and status["status"] != "running":
                 logger.log(
-                    level=logging.INFO,
+                    level=logging.DEBUG,
                     message=f"exitstatus: {status['exitstatus']}",
                 )
                 logger.back()

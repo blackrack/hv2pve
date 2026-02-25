@@ -33,6 +33,16 @@ class RemoteWorker:
         self.logger.log(level=logging.INFO, message=f"COMMAND={command} | OUTPUT={output}")
         return f"/dev/nbd{index}"
 
+    # def dd(self, path: str,connstr:str):
+    #     return
+    #     command = f"ssh {connstr} dd if=/dev/random of={path} bs=1M count=64 conv=fsync > /dev/null 2>&1 "
+    #     output = self.ssh.run(command=command)
+    #     self.logger.add("[ SHA ]").log(level=logging.DEBUG, message=f"COMMAND={command} | OUTPUT={output}").back()
+
+    #     command = f"ssh {connstr} sha1sum {path} "
+    #     output = self.ssh.run(command=command)
+    #     self.logger.add("[ SHA ]").log(level=logging.INFO, message=f"{output}").back()
+
     def destroyNBD(self, index: int):
         command = f"qemu-nbd --disconnect /dev/nbd{index}"
         output = self.ssh.run(command=command)
@@ -48,7 +58,7 @@ class RemoteWorker:
 
     def Copy(self, source: str, destination: str):
         self.ssh.copy(source=source, dest=destination)
-        self.logger.log(level=logging.INFO, message=f"COPY: {destination}")
+        self.logger.log(level=logging.DEBUG, message=f"COPY: {destination}")
 
     def Mount(self, type_mount: MountType, options: str, source: str, destination: str):
         # check if folder exist
@@ -79,7 +89,7 @@ class RemoteWorker:
         command = f"qm importdisk {vmid} {destination} {storage} 2> /dev/null | grep 'successfully imported disk' | {awk} "
         output = self.ssh.run(command=command)
 
-        self.logger.log(level=logging.INFO, message=f"Import Disk Status: {output}")
+        self.logger.log(level=logging.DEBUG, message=f"Import Disk Status: {output}")
         return output
 
     def AttachDisk(self, vmid, slot, disk):
@@ -92,7 +102,7 @@ class RemoteWorker:
         command = f"rm -rf {file}"
         output = self.ssh.run(command=command)
 
-        self.logger.log(level=logging.INFO, message=f"Delete TMP Disk. {file} Status: {output}")
+        self.logger.log(level=logging.DEBUG, message=f"Delete TMP Disk. {file} Status: {output}")
 
     def CreateZFS(self, size, file):
         command = f" zfs create -V {size} {file}"
@@ -102,7 +112,7 @@ class RemoteWorker:
 
     def Umount(self, path):
         output = self.ssh.run(command=f"umount {path}")
-        self.logger.log(level=logging.INFO, message=f"Umount: {path} : {output}")
+        self.logger.log(level=logging.DEBUG, message=f"Umount: {path} : {output}")
 
     def GetFsType(self, destination):
         awk = "awk '{print $2}'"

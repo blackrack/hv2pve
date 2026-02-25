@@ -59,7 +59,7 @@ def main(config: Config):
             CheckSnapshot(),
             CheckConfig(config=config),
             CheckStatusMigrated(proxmoxClient=proxmox_client, config=config),
-            CheckVMCheckpointType(config=config),
+            # CheckVMCheckpointType(config=config),
             CheckSize(config=config, remote_worker=remote_worker, proxmox_client=proxmox_client),
             CheckVMState(config=config),
         ],
