@@ -1,7 +1,5 @@
 import paramiko, logging
 from scp import SCPClient
-
-from .clogger import ContextLogger
 from typing import List
 
 
@@ -17,6 +15,7 @@ class SSHClient:
         self.ssh = None
 
         self._connect()
+        self.counter: int = 0
 
     def _connect(self) -> None:
 
@@ -25,20 +24,26 @@ class SSHClient:
         self.ssh.connect(self.config.ProxmoxIP, port=self.port, username=self.config.ProxmoxUser, password=self.config.ProxmoxPass)
 
     def run(self, command: str, args: List[str] = []) -> str:
+        self.counter = self.counter + 1
+        self.logger.add(f"[ { self.counter } ]")
+
         self.logger.log(level=logging.DEBUG, message=f"[COMMAND] {command} {args}")
+
         cmd: str = f"{command} {' '.join(args)}"
         _, stdout, stderr = self.ssh.exec_command(cmd)
-        output = stdout.read().decode()
+        output = stdout.read().decode().rstrip("\n")
         error = stderr.read().decode()
         exit_code = stdout.channel.recv_exit_status()
-        self.logger.log(level=logging.DEBUG, message=output)
+        self.logger.log(level=logging.DEBUG, message=f"[OUTPUT] {output}")
+        self.logger.log(level=logging.DEBUG, message=f"[EXIT CODE] {exit_code}")
+        self.logger.back()
 
         if error:
             logging.error(error)
         if exit_code > 0:
             raise Exception(f"Detect problem with command: '{command}', program return exit code: {exit_code}")
 
-        return output.rstrip("\n")
+        return output
 
     def copy(self, source, dest):
         with SCPClient(self.ssh.get_transport()) as scp:

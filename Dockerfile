@@ -1,13 +1,12 @@
-FROM python:3.9 
+FROM python:3.15.0a6-slim-trixie
 
 WORKDIR /usr/src/app
 
+RUN apt-get update && apt-get install qemu-utils build-essential  libffi-dev --yes
 COPY ./req.txt ./
-RUN apt-get update && apt-get install qemu-utils --yes
 RUN pip install -r req.txt
 
-COPY ./* ./
-COPY ./lib/* ./lib/
+COPY . .
 
 CMD [ "python" , "./run.py" ,"-v","1" ]
 

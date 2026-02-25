@@ -1,0 +1,9 @@
+{
+    "HYPERV_IP":"192.168.64.100",
+    "HYPERV_USER":"administrator",
+    "HYPERV_PASS":"Tajne-12345",
+
+    "PROXMOX_IP":"192.168.64.202",
+    "PROXMOX_USER":"root",   
+    "PROXMOX_PASS":"Root123$"
+}

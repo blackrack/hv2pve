@@ -1,4 +1,4 @@
-import logging, argparse, json
+import logging
 
 
 LOG_LEVELS = {0: logging.NOTSET, 1: logging.INFO, 2: logging.DEBUG}
@@ -17,7 +17,13 @@ class ContextLogger:
             )
 
     def add(self, context):
+        if len(context) > 25:
+            context = context[:15] + " ... " + context[-15:]
+        self.context_stack.append(context)
+        return self
 
+    def clean(self, context):
+        self.context_stack = []
         self.context_stack.append(context)
         return self
 
