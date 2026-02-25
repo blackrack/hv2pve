@@ -1,4 +1,5 @@
-import subprocess, random, string, argparse, json
+import subprocess, random, string, argparse
+from .config import Config
 
 
 def getParams():
@@ -15,6 +16,20 @@ def getParams():
     return parser.parse_args()
 
 
+def humanable_size(number_input) -> str:
+
+    size = {1: "K", 2: "M", 3: "G", 4: "T"}
+    number = int(number_input)
+    s: int = 0
+    while True:
+        tmp = int(number / 1000)
+
+        if tmp <= 0:
+            return f"{number}{size[s]}"
+        s = s + 1
+        number = tmp
+
+
 def macformat(mac) -> str:
     return ":".join([mac[i : i + 2] for i in range(0, len(mac), 2)])
 
@@ -23,24 +38,24 @@ def run_cmd(cmd):
     return subprocess.run(cmd, shell=True, capture_output=True, text=True)
 
 
-def generate_random_string(length=10):
+def generate_random_string(length=10) -> str:
     return "".join(random.choices(string.ascii_letters + string.digits, k=length))
 
 
-def prep_proxmox_storage(config, Location):
+def prep_proxmox_storage(config: Config, Location: str) -> str:
 
     for map in config.HyperVShareDiskMapping:
-        if Location == map.hypervPath:
+        if map.hypervPath.lower() in Location.lower():
             return map.proxmoxStorage
     return config.ProxmoxStorage
 
 
-def prep_source_mount(config, Location):
+# def prep_source_mount(config:Config, Location: str) -> str:
 
-    if config.HyperVAutoShareDisk:
-        return f"//{config.HyperVIP}/{config.id_migration}"
+#     # if config.HyperVAutoShareDisk:
+#     #     return f"//{config.HyperVIP}/{config.id_migration}"
 
-    for map in config.HyperVShareDiskMapping:
-        if Location == map.hypervPath:
-            return f"//{config.HyperVIP}/{map.hyperVSharedDisk}"
-    return f"//{config.HyperVIP}/{config.HyperVSHAREDISK}"
+#     # for map in config.HyperVShareDiskMapping:
+#     #     if Location == map.hypervPath:
+#     #         return f"//{config.HyperVIP}/{map.hyperVSharedDisk}"
+#     return f"//{config.HyperVIP}/{Location}"
