@@ -63,7 +63,7 @@ class CheckVMCheckpointType(Rule):
         self.config: Config = config
 
     def is_satisfied(self, vm: MSHyperV.VirtualMachine) -> bool:
-        return vm.CheckpointType == HyperVCheckpointType.STD
+        return vm.CheckpointType != HyperVCheckpointType.DISABLE
 
 
 # return True if datastore have enougth space

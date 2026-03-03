@@ -14,8 +14,8 @@ class Client:
         self._connect()
 
     def _connect(self) -> None:
-        self.logger.log(level=logging.INFO, message=f"HyperVIP: {self.config.HyperVIP}")
-        self.logger.log(level=logging.INFO, message=f"HyperVUser: {self.config.HyperVUser}")
+        self.logger.log(level=logging.DEBUG, message=f"HyperVIP: {self.config.HyperVIP}")
+        self.logger.log(level=logging.DEBUG, message=f"HyperVUser: {self.config.HyperVUser}")
         protocol: str = "https" if self.config.HyperVSSL else "http"
         port: int = 5985
         try:
@@ -40,22 +40,22 @@ class Client:
 
     def NewCheckPoint(self, vmid, name):
         script = f"""Checkpoint-VM -Name {vmid} -SnapshotName {name} | ConvertTo-Json """
-        self.logger.log(level=logging.INFO, message=f"NewCheckPoint: NAME:{name} ; vmid:{vmid} ")
+        self.logger.log(level=logging.INFO, message=f"NewCheckPoint: {name}")
         return self._run(script=script)
 
     def RemoveCheckPoint(self, vmid, name):
         script = f"""Remove-VMCheckpoint -VMName {vmid} -Name {name} | ConvertTo-Json """
-        self.logger.log(level=logging.INFO, message=f"RemoveCheckPoint: NAME:{name} ; vmid:{vmid}  ")
+        self.logger.log(level=logging.INFO, message=f"RemoveCheckPoint: {name}")
         return self._run(script=script)
 
     def PowerOn(self, name):
-        self.logger.log(level=logging.INFO, message=f"Start-VM: NAME:{name} ")
+        self.logger.log(level=logging.INFO, message=f"Start-VM")
         script = f"""Start-VM -VMName {name}"""
 
         return self._run(script=script)
 
     def PowerOffVM(self, vmid, force=True, turnoff=True, noconfirm=True):
-        self.logger.log(level=logging.INFO, message=f"Stop-VM: NAME:{vmid} ")
+        self.logger.log(level=logging.INFO, message=f"Stop-VM")
         script = f"""Stop-VM -VMName {vmid}"""
 
         if force:
@@ -71,7 +71,7 @@ class Client:
 
     def WaitForPoweroff(self, vmid):
         script = f"""Get-VM -VMName {vmid} | select state | ConvertTo-Json"""
-        self.logger.log(level=logging.INFO, message=f"WaitForPoweroff: NAME:{vmid} ")
+        self.logger.log(level=logging.INFO, message=f"WaitForPoweroff ...")
         return self.runJson(script=script)[0]
 
     def NewSMB(self, share_name, path):

@@ -73,17 +73,17 @@ Before starting the migration using **AVHDX Migrate Chain**, complete the follow
 
 # Section 3. Required Edits to the env.json File:
 ```
-"HYPERV_IP":"192.168.100.129",  # Hyper-V server IP address
-"HYPERV_USER":"administrator",  # Username
-"HYPERV_PASS":"change_me",      # Password
-"HYPERV_SMB_VERSION":"3.0",     # ( Default value: 3.0 ) SMB client Version
-"HYPER_VM_LIST": [              # List of Hyper-V machine IDs to be migrated
+"HYPERV_IP":"192.168.100.129",  # Required: Hyper-V server IP address
+"HYPERV_USER":"administrator",  # Required: Username
+"HYPERV_PASS":"change_me",      # Required: Password
+"HYPERV_SMB_VERSION":"3.0",     # Optional:( Default value: 3.0 ) SMB client Version
+"HYPER_VM_LIST": [              # Optional: List of Hyper-V machine IDs to be migrated , empty list select all 
     "8de199b6-d858-45d6-81ef-55eb7a3dbf6f",
     "62ac9e25-800c-4546-a97e-7f6141bf9ea4"
     ],
-"Migrate_Ovewrite": true,          # ( Default value: False ) If enabled, the script automatically reimported VM only if all disk are creating
-"HYPERV_CREATE_CHECKPOINT": true,  # ( Default value: False ) If enabled, the script creates a checkpoint (snapshot chain) before migration to reduce VM downtime.
-"HYPERV_SHAREDISK_MAPPING":        # Mapping of the share/disk path to the Proxmox storage where the disk will be imported
+"MIGRATE_OVERWRITE": true,         # Optional: ( Default value: false ) If enabled, allows reimporting the VM when a previous migration attempt failed but the VM disks were already created on the Proxmox side.
+"HYPERV_CREATE_CHECKPOINT": true,  # Optional: ( Default value: False ) If enabled, the script creates a checkpoint (snapshot chain) before migration to reduce VM downtime.
+"HYPERV_SHAREDISK_MAPPING":        # Optional: Mapping of the share/disk path to the Proxmox storage where the disk will be imported
     [
         {
             "HYPERV_PATH":"C:/VMDisks",
@@ -94,18 +94,18 @@ Before starting the migration using **AVHDX Migrate Chain**, complete the follow
             "PROXMOX_STORAGE":"space"
         }
     ],
-"PROXMOX_IP":"192.168.100.252",      # Proxmox server IP address
-"PROXMOX_USER":"root",               # Username
-"PROXMOX_PASS":"change_me",          # Password
+"PROXMOX_IP":"192.168.100.252",      # Required: Proxmox server IP address
+"PROXMOX_USER":"root",               # Required: Username
+"PROXMOX_PASS":"change_me",          # Required: Password
 
-"PROXMOX_STORAGE":"data",            # ( Default value: None )  Default datastore in Proxmox where disks will be imported
-"PROXMOX_SWITCH_DEFAULT":"vmbr0",    # ( Default value: vmbr0 ) Default bridge to connect virtual machine network adapters to after migration
+"PROXMOX_STORAGE":"data",            # Optional: ( Default value: None )  Default datastore in Proxmox where disks will be imported
+"PROXMOX_SWITCH_DEFAULT":"vmbr0",    # Optional: ( Default value: vmbr0 ) Default bridge to connect virtual machine network adapters to after migration
                                      # (unless PROXMOX_SWITCH_MAPPING defines a different bridge)
-"PROXMOX_SWITCH_MAPPING":{           # Mapping network adapters to specific bridges based on Hyper-V switchId
+"PROXMOX_SWITCH_MAPPING":{           # Optional: Mapping network adapters to specific bridges based on Hyper-V switchId
         "f3f8527d-2d64-4636-a1b4-bf84d2816fbd":"vmbr1",
         "4673abd7-1014-4cf4-9cb0-ffffffffffff":"vmbr2"
 },  
-"PROXMOX_NETWORK_TYPE":"e1000",      # ( Default value: e1000 ) Default network adapter type
-"PROXMOX_START_AFTER": true,         # ( Default value: False ) If true, start the virtual machine(s) after migration is completed
-"PROXMOX_IMPORT_ONCE": true          # ( Default value: False ) If true, perform only one import (useful for testing)
+"PROXMOX_NETWORK_TYPE":"e1000",      # Optional: ( Default value: e1000 ) Default network adapter type
+"PROXMOX_START_AFTER": true,         # Optional: ( Default value: False ) If true, start the virtual machine(s) after migration is completed
+"PROXMOX_IMPORT_ONCE": true          # Optional: ( Default value: False ) If true, perform only one import (useful for testing)
 ```

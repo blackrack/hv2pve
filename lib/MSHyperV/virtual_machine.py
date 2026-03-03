@@ -139,7 +139,7 @@ class VirtualMachine:
                 raise Exception("Problem with status VM")
             time.sleep(10)
             status_json = self._client.getStatusVM(name=self.name)
-            self._client.logger.log(level=logging.INFO, message=f"status: { status_json } ")
+            self._client.logger.log(level=logging.INFO, message=f"status: { status_json["Status"] } ")
             if status_json["Status"] == status:
                 return
 

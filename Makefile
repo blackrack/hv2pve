@@ -14,13 +14,8 @@ build:
 buildNoCache:
 	@docker build --no-cache -t $(IMAGE_NAME):$(IMAGE_VER) .
 
-rund:
+rundocker:
 	docker run --network host -v $(shell pwd)/env.json:/usr/src/app/env.json --rm $(IMAGE_NAME):$(IMAGE_VER) 
-
-clean:
-	@python3 ./run_clean.py -v 1
-
-re: clean run
 
 dryrun:
 	@python3 ./run.py --dry-run -v 1

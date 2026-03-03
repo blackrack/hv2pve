@@ -44,7 +44,7 @@ class ProxmoxVM:
             pdisk._Type = DiskType.QCOW2
             payload[f"{disk.type_disk}{disk.index}"] = payload[f"{disk.type_disk}{disk.index}"] + ",format=qcow2"
 
-        self.client.logger.log(level=logging.INFO, message=f"payload: {payload}")
+        self.client.logger.log(level=logging.DEBUG, message=f"Prep payload for proxmox Api: {payload}")
 
         # sprawdzmy czy dysk istnieje
         tmp = self.client.getDisk(vmid=self.vmid)
@@ -55,14 +55,14 @@ class ProxmoxVM:
             time.sleep(5)
             tmp = self.client.getDisk(vmid=self.vmid)
         else:
-            self.client.logger.log(level=logging.INFO, message=f"exist disk")
+            self.client.logger.log(level=logging.INFO, message=f"Disc Exist")
 
         path = ""
         if not f"{disk.type_disk}{disk.index}" in tmp:
             raise f"fuck"
 
         path = tmp[f"{disk.type_disk}{disk.index}"].split(",")[0].split(":")
-        self.client.logger.log(level=logging.INFO, message=f"BIND: {disk.type_disk}{disk.index} {path}")
+        self.client.logger.log(level=logging.DEBUG, message=f"BIND: {disk.type_disk}{disk.index} {path}")
         pdisk.bind = tmp[f"{disk.type_disk}{disk.index}"].split(",")[0]
 
         if proxmox_storage_type == ProxmoxDatastoreType.ZFSPOOL:
@@ -72,5 +72,5 @@ class ProxmoxVM:
         elif proxmox_storage_type == ProxmoxDatastoreType.LVM:
             pdisk.Location = f"/dev/{proxmox_storage}/{path[1]}"
 
-        self.client.logger.log(level=logging.INFO, message=f"Path: {pdisk.Location}")
+        self.client.logger.log(level=logging.DEBUG, message=f"Path: {pdisk.Location}")
         # return output
