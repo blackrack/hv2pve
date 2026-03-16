@@ -15,11 +15,18 @@ class Rule(ABC):
     def is_satisfied(self, vm: MSHyperV.VirtualMachine) -> bool:
         pass
 
+    @abstractmethod
+    def msg(self) -> str:
+        pass
+
 
 # return True if vm is in config or config not exist
 class CheckConfig(Rule):
     def __init__(self, config: Config):
         self.config: Config = config
+
+    def msg(self):
+        return "VM ID not found in HYPER_VM_LIST (variable defined in env.json)."
 
     def is_satisfied(self, vm: MSHyperV.VirtualMachine) -> bool:
         return self.config.IsVMId(vm.vmid)
@@ -30,6 +37,9 @@ class CheckStatusMigrated(Rule):
     def __init__(self, proxmoxClient: ProxmoxClient, config: Config):
         self.config: Config = config
         self.proxmoxClient = proxmoxClient
+
+    def msg(self):
+        return "VM corrupted or in invalid state. Manual cleanup may be required before re-import."
 
     def is_satisfied(self, hvm: MSHyperV.VirtualMachine) -> bool:
         vm = self.proxmoxClient.IsExistVMByHyperVID(hvm.vmid)
@@ -54,6 +64,9 @@ class CheckVMState(Rule):
     def __init__(self, config: Config):
         self.config: Config = config
 
+    def msg(self):
+        return "The VM cannot be started (see readme.md, Section 2 – AMC)."
+
     def is_satisfied(self, vm: MSHyperV.VirtualMachine) -> bool:
         return self.config.HyperVCreateCheckPoint or vm.State != HyperVVmState.RUNNING
 
@@ -61,6 +74,9 @@ class CheckVMState(Rule):
 class CheckVMCheckpointType(Rule):
     def __init__(self, config: Config):
         self.config: Config = config
+
+    def msg(self):
+        return "Checkpoint mode cannot be disabled for the VM"
 
     def is_satisfied(self, vm: MSHyperV.VirtualMachine) -> bool:
         return vm.CheckpointType != HyperVCheckpointType.DISABLE
@@ -87,6 +103,9 @@ class CheckSize(Rule):
                 return False
         return True
 
+    def msg(self):
+        return "Insufficient space on datastore: cannot allocate required VM disks."
+
     def is_satisfied(self, vm: MSHyperV.VirtualMachine) -> bool:
         for disk in vm.disks:
             self.config.logger.add(f"[ {disk.Path} ]")
@@ -112,10 +131,12 @@ class CheckSize(Rule):
 
         return True
 
-    # return True if vm do not have checkpoit
 
-
+# return True if vm do not have checkpoit
 class CheckSnapshot(Rule):
+    def msg(self):
+        return "The VM cannot have a snapshot"
+
     def is_satisfied(self, vm: MSHyperV.VirtualMachine) -> bool:
         return not vm.getCheckpoints()
 
@@ -133,7 +154,7 @@ class MigrationEligibilityChecker:
             list_output_rules.append(ready)
             if not ready:
                 self.logger.add("[ SKIP ]")
-                self.logger.log(level=logging.INFO, message=f"VM {vm.name} {rule.__class__.__name__}")
+                self.logger.log(level=logging.INFO, message=f"VM {vm.name} [REASON] {rule.msg()}")
                 self.logger.back()
                 return False
         output = all(list_output_rules)
