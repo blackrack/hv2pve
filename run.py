@@ -56,10 +56,11 @@ def main(config: Config):
 
     runner = MigrationEligibilityChecker(
         rules=[
+            CheckImportedStatus(proxmoxClient=proxmox_client, config=config),
             CheckSnapshot(),
             CheckConfig(config=config),
             CheckStatusMigrated(proxmoxClient=proxmox_client, config=config),
-            # CheckVMCheckpointType(config=config),
+            CheckVMCheckpointType(config=config),
             CheckSize(config=config, remote_worker=remote_worker, proxmox_client=proxmox_client),
             CheckVMState(config=config),
         ],
