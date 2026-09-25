@@ -11,7 +11,7 @@ def getParams():
 
     parser.add_argument("-v", "--verbose", type=int, default=0, help="Set verbosity level")
     parser.add_argument("--dry-run", action="store_true", help="Perform a trial run without making any changes")
-    parser.add_argument("--config", type=str, default="env.json", help="Config location")
+    parser.add_argument("--config", type=str, default=".env.json", help="Config location")
 
     return parser.parse_args()
 

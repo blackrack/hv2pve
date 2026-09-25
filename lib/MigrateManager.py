@@ -106,7 +106,6 @@ class MigrateManager:
             collect_snapshot.append(f"Checkpoint{a}")
 
             self.disk_manager.migrate_disks(proxmox_vm=proxmox_vm, hyperV_vm=hyperV_vm)
-            
 
             while loop:
                 hyperV_vm.refresh()
