@@ -39,6 +39,9 @@
 Run the Appropriate Script Based on the System:
 
     Depending on the source system (Windows/Linux), you need to run the corresponding script from the prep_script directory on a migrated VM.
+    For **HYPER-V using HTTPS WinRM**, use the following Ansible script:
+
+[ConfigureRemotingForAnsible.ps1](https://raw.githubusercontent.com/ansible/ansible-documentation/refs/heads/devel/examples/scripts/ConfigureRemotingForAnsible.ps1)
 
 ## Additional Requirements (for AVHDX Migrate Chain)
 

@@ -128,7 +128,7 @@ class ProxmoxClient:
         node = self.findNodeWithVM(vmid)
         self.api.nodes(node).qemu(vmid).status.start.post()
         self.logger.log(level=logging.INFO, message=f"Starting VM on ProxmoxVe")
-        
+
     def startAndSuspend(self, vmid):
         node = self.findNodeWithVM(vmid)
         self.api.nodes(node).qemu(vmid).status.start.post()
@@ -141,6 +141,7 @@ class ProxmoxClient:
         node = self.findNodeWithVM(vmid)
         self.api.nodes(node).qemu(vmid).status.resume.post()
         self.logger.log(level=logging.INFO, message=f"Resume VM on ProxmoxVe")
+
     def stop(self, vmid):
         node = self.findNodeWithVM(vmid)
         return self.api.nodes(node).qemu(vmid).status.stop.post()

@@ -35,7 +35,7 @@ class Config:
         self.HyperVCreateCheckPoint: bool = os.environ["HYPERV_CREATE_CHECKPOINT"] if "HYPERV_CREATE_CHECKPOINT" in os.environ else self._raw_dict_data.get("HYPERV_CREATE_CHECKPOINT", False)
         self.HuperVVMLIST = self._raw_dict_data.get("HYPER_VM_LIST", [])
         self.HyperVShareDiskMapping = [HyperVDiskMapping(item) for item in self._raw_dict_data.get("HYPERV_SHAREDISK_MAPPING", [])]
-        
+
         self.HyperVPowerOffForce: bool = os.environ["HyperVPowerOffForce"] if "HyperVPowerOffForce" in os.environ else self._raw_dict_data.get("HyperVPowerOffForce", False)
         self.HyperVTurnOff: bool = os.environ["HyperVTurnOff"] if "HyperVTurnOff" in os.environ else self._raw_dict_data.get("HyperVTurnOff", True)
         self.HyperVNoConfirm: bool = os.environ["HyperVNoConfirm"] if "HyperVNoConfirm" in os.environ else self._raw_dict_data.get("HyperVNoConfirm", True)

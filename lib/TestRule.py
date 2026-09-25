@@ -31,13 +31,14 @@ class CheckConfig(Rule):
     def is_satisfied(self, vm: MSHyperV.VirtualMachine) -> bool:
         return self.config.IsVMId(vm.vmid)
 
+
 class CheckImportedStatus(Rule):
     def __init__(self, proxmoxClient: ProxmoxClient, config: Config):
         self.config: Config = config
         self.proxmoxClient = proxmoxClient
 
     def msg(self):
-        return "The VM has already been migrated." 
+        return "The VM has already been migrated."
 
     def is_satisfied(self, hvm: MSHyperV.VirtualMachine) -> bool:
         vm = self.proxmoxClient.IsExistVMByHyperVID(hvm.vmid)
@@ -48,6 +49,7 @@ class CheckImportedStatus(Rule):
             return False
 
         return True
+
 
 # return True if vm not exist or exist adn has
 class CheckStatusMigrated(Rule):
